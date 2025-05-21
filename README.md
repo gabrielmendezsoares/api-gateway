@@ -1,1 +1,1 @@
-# node-api-gateway
+# api-gateway
