@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
+import momentTimezone from 'moment-timezone';
 import { PrismaClient } from '@prisma/client/storage/client.js';
-import { dateTimeFormatterUtil, cryptographyUtil, HttpClientUtil, ApiKeyStrategy, BasicStrategy, BasicAndBearerStrategy, BearerStrategy, OAuthStrategy } from '../../expressium/src/index.js';
+import { cryptographyUtil, HttpClientUtil, ApiKeyStrategy, BasicStrategy, BasicAndBearerStrategy, BearerStrategy, OAuthStrategy } from '../../expressium/src/index.js';
 import { IApi, IApiData, IReqBody, IResponse, IResponseData } from '../interfaces/index.js';
 
 const prisma = new PrismaClient();
@@ -351,7 +352,7 @@ const processApiData = async (
       }
     ];
   } catch (error: unknown) {
-    console.log(`Service | Timestamp: ${ timestamp } | Name: processApiData | Error: ${ error instanceof Error ? error.message : String(error) }`);
+    console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Path: src/services/getApiDataMap.service.ts | Location: processApiData | Error: ${ error instanceof Error ? error.message : String(error) }`);
 
     return [
       name,
@@ -429,7 +430,7 @@ export const getApiDataMap = async (
     const apiDataEntryList = await Promise.all(
       apiList.map(
         (api: unknown): Promise<[string, IApiData.ISuccessApiData | IApiData.IErrorApiData]> => {
-          return processApiData(api as IApi.IApi, req, dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()));
+          return processApiData(api as IApi.IApi, req, momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss'));
         }
       )
     );
@@ -451,7 +452,7 @@ export const getApiDataMap = async (
       }
     };
   } catch (error: unknown) {
-    console.log(`Service | Timestamp: ${ timestamp } | Name: getApiDataMap | Error: ${ error instanceof Error ? error.message : String(error) }`);
+    console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Path: src/services/getApiDataMap.service.ts | Location: getApiDataMap | Error: ${ error instanceof Error ? error.message : String(error) }`);
 
     return {
       status: 500,
