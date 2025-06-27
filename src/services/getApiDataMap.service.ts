@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import momentTimezone from 'moment-timezone';
 import { PrismaClient } from '@prisma/client/storage/client.js';
 import { cryptographyUtil, HttpClientUtil, ApiKeyStrategy, BasicStrategy, BasicAndBearerStrategy, BearerStrategy, OAuthStrategy } from '../../expressium/src/index.js';
-import { IApi, IApiData, IReqBody, IResponse, IResponseData } from '../interfaces/index.js';
+import { IApi, IApiData, IReqBody, IResponse, IResponseData } from './interfaces/index.js';
 
 const prisma = new PrismaClient();
 
