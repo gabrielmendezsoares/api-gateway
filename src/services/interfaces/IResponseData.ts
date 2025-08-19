@@ -1,47 +1,31 @@
-import { IApiData } from "./index.js";
-
 export interface IResponseData {
-  timestamp: string;
-  status: boolean;
-  statusCode: number;
-  method: string;
-  path: string;
-  query: Record<string, any>;
-  headers: Record<string, any>;
-  body: any;
   message: string;
   suggestion: string;
 }
 
+export interface ICreateApiDataResponseData { data: Record<string, any>; }
+
 export interface IGetHealthResponseData {
-  timestamp: string;
-  status: boolean;
-  statusCode: number;
-  method: string;
-  path: string;
-  query: Record<string, any>;
-  headers: Record<string, any>;
-  body: any;
   monitor: {
     cpuUsage: {
       name: string;
       value: string;
+      isListeningModifiedEvent?: boolean;
     };
     memoryUsage: {
       name: string;
       value: string;
+      isListeningModifiedEvent?: boolean;
+    };
+    port: {
+      name: string;
+      value: string;
+      isListeningModifiedEvent?: boolean;
+    };
+    logLevel: {
+      name: string;
+      value: string;
+      isListeningModifiedEvent?: boolean;
     };
   };
-}
-
-export interface IGetApiDataMapResponseData {
-  timestamp: string;
-  status: boolean;
-  statusCode: number;
-  method: string;
-  path: string;
-  query: Record<string, any>;
-  headers: Record<string, any>;
-  body: any;
-  data: Record<string, IApiData.ISuccessApiData | IApiData.IErrorApiData>;
 }

@@ -1,6 +1,3 @@
-import { IApi } from "./index.js"
+import { api_gateway_apis } from "@prisma/client/storage/index.js";
 
-export interface IGetApiDataMapReqBody {
-  filterMap: Record<keyof IApi.IApi, any>;
-  globalReplacementMap: IApi.IApi;
-}
+export interface ICreateApiDataReqBody { filterMap: Record<keyof api_gateway_apis, any>; }
