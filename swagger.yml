@@ -1,0 +1,500 @@
+openapi: 3.0.3
+info:
+  title: 🔀 API Gateway
+  version: 3.0.1
+  description: |
+    ## 📋 Overview
+
+    This service dynamically executes a set of remote API requests based on configurations stored in the system. Acting as a smart orchestrator, it applies authentication, request formatting, and execution logic for each API entry — and aggregates the responses into a single, structured result.
+
+    Each API call is executed using its designated authentication strategy (API Key, Basic, Bearer, or Basic + Bearer), with secure credential handling via AES encryption. This centralized mechanism enables dynamic data retrieval from multiple external sources without hardcoding any remote API details in client applications.
+
+    Designed for flexibility and scalability, this service simplifies integration with external APIs while ensuring consistent security and error handling across all calls.
+
+    ### 🎯 Objectives
+
+    - Dynamically fetch and execute remote API requests based on stored configurations
+    - Support multiple authentication strategies (API Key, Basic, Bearer, Basic + Bearer)
+    - Securely handle encrypted credentials using runtime decryption (AES-256-CBC)
+    - Apply per-API query parameters, headers, and body content as configured
+    - Aggregate success and failure results in a unified response object
+    - Gracefully handle partial failures without impacting unrelated API responses
+    - Simplify third-party API integration for client applications through a centralized gateway
+servers:
+  - url: http://localhost:3043
+    description: Development server
+components:
+  securitySchemes:
+    Basic:
+      type: http
+      scheme: basic
+      description: Basic authentication using username and password
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer authentication using JWT token
+  schemas:
+    ICreateApiDataReqBody:
+      type: object
+      properties:
+        filterMap:
+          type: object
+          additionalProperties: true
+          description: Optional filter criteria for narrowing down the API list to process.
+      example:
+        filterMap:
+          name: ["Get Weather", "Get Users"]          
+    IResponseData:
+      type: object
+      required:
+        - message
+        - suggestion
+      properties:
+        message:
+          type: string
+          description: Human-readable error message.
+          example: "Authentication token has expired."
+        suggestion:
+          type: string
+          description: Suggested action to resolve the error.
+          example: "Please sign in again to obtain a new token."
+    IGetAuthenticationResponseData:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - username
+            - roleList
+            - token
+            - expiresIn
+          properties:
+            username:
+              type: string
+              description: Username of the authenticated user.
+              example: "john.doe"
+            roleList:
+              type: array
+              description: Roles or permissions assigned to the user.
+              items:
+                type: string
+              example: ["admin", "user"]
+            token:
+              type: string
+              description: Signed JWT token for subsequent authenticated requests.
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            expiresIn:
+              type: integer
+              format: int64
+              description: Token expiration time in milliseconds.
+              example: 1726080123123
+    IGetHealthResponseData:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - cpuUsage
+            - memoryUsage
+            - port
+            - logLevel
+          properties:
+            cpuUsage:
+              type: object
+              required:
+                - name
+                - value
+              properties:
+                name:
+                  type: string
+                  description: Label for CPU usage metric.
+                  example: "Uso de CPU"
+                value:
+                  type: string
+                  description: Value of CPU usage.
+                  example: "8.1%"
+                isListeningModifiedEvent:
+                  type: boolean
+                  description: If monitor should listen for modification events.
+                  example: false
+            memoryUsage:
+              type: object
+              required:
+                - name
+                - value
+              properties:
+                name:
+                  type: string
+                  description: Label for memory usage metric.
+                  example: "Uso de memória"
+                value:
+                  type: string
+                  description: Value of memory usage.
+                  example: "8.1MB"
+                isListeningModifiedEvent:
+                  type: boolean
+                  description: If monitor should listen for modification events.
+                  example: false
+            port:
+              type: object
+              required:
+                - name
+                - value
+              properties:
+                name:
+                  type: string
+                  description: Label indicating which port the application is running on.
+                  example: "Porta"
+                value:
+                  type: string
+                  description: Port number the application is currently using.
+                  example: "3000"
+                isListeningModifiedEvent:
+                  type: boolean
+                  description: If monitor should listen for modification events.
+                  example: true
+            logLevel:
+              type: object
+              required:
+                - name
+                - value
+              properties:
+                name:
+                  type: string
+                  description: Label indicating the current logging level.
+                  example: "Nível de log"
+                value:
+                  type: string
+                  description: Current log level set for the application.
+                  example: "info"
+                isListeningModifiedEvent:
+                  type: boolean
+                  description: If monitor should listen for modification events.
+                  example: true
+    ICreateApiDataResponseData:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+          description: |
+            A key-value mapping of API names to their corresponding response results.
+
+            - The key is the `name` of the API as stored in the system.
+            - The value is the remote API's response, which may either include data from the third-party system, or a fallback error response if the call failed.
+
+            This structure enables clients to clearly see which APIs succeeded and which encountered issues, all in a single unified response.
+      example:
+        data:
+          Get Weather:
+            data:
+              temperature: "25°C"
+              condition: "Cloudy"
+              humidity: "80%"
+          Get Users:
+            message: "The api data creation process encountered a technical issue."
+            suggestion: "Please try again later or contact support if the issue persists."
+tags:
+  - name: Application
+    description: Core system operations including authentication, health monitoring, and system management
+paths:
+  /api/v1/get/authentication:
+    get:
+      tags:
+        - Application
+      summary: Authenticate user and issue JWT token
+      description: |
+        Authenticates a user via Basic Authentication and issues a signed JWT token upon successful validation.
+        A request was made on it to verify credentials and generate an access token for authorized usage.
+      security:
+        - Basic: []
+      responses:
+        '200':
+          description: The request was successfully received, understood, and processed. A valid response was generated based on the request made on it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IGetAuthenticationResponseData'
+              example:
+                data:
+                  username: "john.doe"
+                  roleList: ["admin", "user"]
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  expiresIn: 1726080123123
+        '400':
+          description: The server could not process the request due to invalid syntax, malformed data, or missing parameters. Although there was a request on it, the client must correct the request before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Authorization header required for secure access
+                  value:
+                    message: "Authorization header required for secure access."
+                    suggestion: "Include an Authorization header using the Basic scheme: \"Basic base64(username:password)\"."
+                example_2:
+                  summary: Authorization must use Basic authentication scheme
+                  value:
+                    message: "Authorization must use Basic authentication scheme."
+                    suggestion: "Use the Basic authentication scheme: \"Basic base64(username:password)\"."
+        '401':
+          description: The request was received and a request was made on it, but the client failed to provide valid authentication credentials. Access is denied until proper authentication is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Invalid username
+                  value:
+                    message: "Invalid username."
+                    suggestion: "Ensure the username is correct or register for an account if you don’t have one."
+                example_2:
+                  summary: Incorrect password
+                  value:
+                    message: "Incorrect password."
+                    suggestion: "Double-check your password or reset it if you’ve forgotten it."
+        '403':
+          description: Account is inactive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              example:
+                message: "Account is inactive."
+                suggestion: "Contact your administrator to request account reactivation."
+        '500':
+          description: Authentication process encountered a technical issue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              example:
+                message: "Authentication process encountered a technical issue."
+                suggestion: "Please try again later or contact support if the issue persists."
+  /api/v1/create/api-data:
+    post:
+      tags:
+        - Application
+      summary: Create API Data from Registered API Gateway Sources
+      description: |
+        Processes multiple API gateway entries stored in the system, executes their configured HTTP calls using various authentication strategies (API Key, Basic, Bearer, or Basic and Bearer), and returns their responses in a mapped object format.
+        A request was made on it to dynamically fetch data from configured remote APIs using stored metadata.
+      security:
+        - Bearer: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ICreateApiDataReqBody' 
+            example:
+              filterMap:
+                name: ["Get Weather", "Get Users"]      
+      responses:
+  /api/v1/get/health:
+    get:
+      tags:
+        - Application
+      summary: Retrieve application health metrics
+      description: |
+        Returns current system health indicators such as CPU and memory usage.
+        A request was made on it to monitor the application’s operational status in real time.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: The request was successfully received, understood, and processed. A valid response was generated based on the request made on it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IGetHealthResponseData'
+              example:
+                data:
+                  cpuUsage:
+                    name: "Uso de CPU"
+                    value: "8.1%"
+                  memoryUsage:
+                    name: "Uso de memória"
+                    value: "8.1MB"
+                  port:
+                    name: "Porta"
+                    value: "3000"
+                    isListeningModifiedEvent: true
+                  logLevel:
+                    name: "Nível de log"
+                    value: "info"
+                    isListeningModifiedEvent: true
+        '400':
+          description: The server could not process the request due to invalid syntax, malformed data, or missing parameters. Although there was a request on it, the client must correct the request before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Missing Authorization header
+                  value:
+                    message: "Missing Authorization header."
+                    suggestion: "Include an Authorization header using the Bearer scheme: \"Bearer <token>\"."
+                example_2:
+                  summary: Invalid Authorization scheme
+                  value:
+                    message: "Invalid Authorization scheme."
+                    suggestion: "Use the Bearer authentication scheme: \"Bearer <token>\"."
+        '401':
+          description: The request was received and a request was made on it, but the client failed to provide valid authentication credentials. Access is denied until proper authentication is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Authentication token has expired
+                  value:
+                    message: "Authentication token has expired."
+                    suggestion: "Please sign in again to obtain a new token."
+                example_2:
+                  summary: Invalid authentication token
+                  value:
+                    message: "Invalid authentication token."
+                    suggestion: "Ensure your token is valid and has not been tampered with."
+                example_3:
+                  summary: Authentication token is not yet active
+                  value:
+                    message: "Authentication token is not yet active."
+                    suggestion: "Wait until the token’s start time before using it."
+                example_4:
+                  summary: Authentication token has expired
+                  value:
+                    message: "Authentication token has expired."
+                    suggestion: "Please sign in again to obtain a new token."
+        '403':
+          description: Missing required role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              example:
+                message: "Missing required role."
+                suggestion: "If you believe this is an error, contact your administrator to request appropriate access."    
+        '500':
+          description: The server encountered an unexpected error while processing the request. A request was made on it, but the server failed to complete the operation due to an internal issue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: The authorization process is temporarily unavailable
+                  value:
+                    message: "The authorization process is temporarily unavailable."
+                    suggestion: "Please try again later or contact support if the issue persists."
+                example_2:
+                  summary: The authorization process encountered a technical issue
+                  value:
+                    message: "The authorization process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."
+                example_3:
+                  summary: The health diagnostic process encountered a technical issue
+                  value:
+                    message: "The health diagnostic process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."
+        '200':
+          description: The request was successfully received, understood, and processed. A valid response was generated based on the request made on it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ICreateApiDataResponseData'
+              example:
+                data:
+                  Get Weather:
+                    data:
+                      temperature: "25°C"
+                      condition: "Cloudy"
+                  Get Users:
+                    message: "The api data creation process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."
+        '400':
+          description: The server could not process the request due to invalid syntax, malformed data, or missing parameters. Although there was a request on it, the client must correct the request before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Missing Authorization header
+                  value:
+                    message: "Missing Authorization header."
+                    suggestion: "Include an Authorization header using the Bearer scheme: \"Bearer <token>\"."
+                example_2:
+                  summary: Invalid Authorization scheme
+                  value:
+                    message: "Invalid Authorization scheme."
+                    suggestion: "Use the Bearer authentication scheme: \"Bearer <token>\"."
+        '401':
+          description: The request was received and a request was made on it, but the client failed to provide valid authentication credentials. Access is denied until proper authentication is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Authentication token has expired
+                  value:
+                    message: "Authentication token has expired."
+                    suggestion: "Please sign in again to obtain a new token."
+                example_2:
+                  summary: Invalid authentication token
+                  value:
+                    message: "Invalid authentication token."
+                    suggestion: "Ensure your token is valid and has not been tampered with."
+                example_3:
+                  summary: Authentication token is not yet active
+                  value:
+                    message: "Authentication token is not yet active."
+                    suggestion: "Wait until the token’s start time before using it."
+                example_4:
+                  summary: Authentication token has expired
+                  value:
+                    message: "Authentication token has expired."
+                    suggestion: "Please sign in again to obtain a new token."
+        '403':
+          description: Missing required role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              example:
+                message: "Missing required role."
+                suggestion: "If you believe this is an error, contact your administrator to request appropriate access."    
+        '500':
+          description: The server encountered an unexpected error while processing the request. A request was made on it, but the server failed to complete the operation due to an internal issue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: The authorization process is temporarily unavailable
+                  value:
+                    message: "The authorization process is temporarily unavailable."
+                    suggestion: "Please try again later or contact support if the issue persists."
+                example_2:
+                  summary: The authorization process encountered a technical issue
+                  value:
+                    message: "The authorization process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."
+                example_3:
+                  summary: The api data creation process encountered a technical issue
+                  value:
+                    message: "The api data creation process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."

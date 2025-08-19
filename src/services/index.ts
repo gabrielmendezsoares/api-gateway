@@ -1,2 +1,2 @@
-export * as appService from './app.service.js';
-export * as getApiDataMapService from './getApiDataMap.service.js';
+export * as createApiDataService from './createApiData.service.js';
+export * as getHealthService from './getHealth.service.js';
