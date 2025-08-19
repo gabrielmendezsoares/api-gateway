@@ -300,6 +300,96 @@ paths:
               filterMap:
                 name: ["Get Weather", "Get Users"]      
       responses:
+        '200':
+          description: The request was successfully received, understood, and processed. A valid response was generated based on the request made on it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ICreateApiDataResponseData'
+              example:
+                data:
+                  Get Weather:
+                    data:
+                      temperature: "25°C"
+                      condition: "Cloudy"
+                  Get Users:
+                    message: "The api data creation process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."
+        '400':
+          description: The server could not process the request due to invalid syntax, malformed data, or missing parameters. Although there was a request on it, the client must correct the request before retrying.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Missing Authorization header
+                  value:
+                    message: "Missing Authorization header."
+                    suggestion: "Include an Authorization header using the Bearer scheme: \"Bearer <token>\"."
+                example_2:
+                  summary: Invalid Authorization scheme
+                  value:
+                    message: "Invalid Authorization scheme."
+                    suggestion: "Use the Bearer authentication scheme: \"Bearer <token>\"."
+        '401':
+          description: The request was received and a request was made on it, but the client failed to provide valid authentication credentials. Access is denied until proper authentication is provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: Authentication token has expired
+                  value:
+                    message: "Authentication token has expired."
+                    suggestion: "Please sign in again to obtain a new token."
+                example_2:
+                  summary: Invalid authentication token
+                  value:
+                    message: "Invalid authentication token."
+                    suggestion: "Ensure your token is valid and has not been tampered with."
+                example_3:
+                  summary: Authentication token is not yet active
+                  value:
+                    message: "Authentication token is not yet active."
+                    suggestion: "Wait until the token’s start time before using it."
+                example_4:
+                  summary: Authentication token has expired
+                  value:
+                    message: "Authentication token has expired."
+                    suggestion: "Please sign in again to obtain a new token."
+        '403':
+          description: Missing required role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              example:
+                message: "Missing required role."
+                suggestion: "If you believe this is an error, contact your administrator to request appropriate access."    
+        '500':
+          description: The server encountered an unexpected error while processing the request. A request was made on it, but the server failed to complete the operation due to an internal issue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IResponseData'
+              examples:
+                example_1:
+                  summary: The authorization process is temporarily unavailable
+                  value:
+                    message: "The authorization process is temporarily unavailable."
+                    suggestion: "Please try again later or contact support if the issue persists."
+                example_2:
+                  summary: The authorization process encountered a technical issue
+                  value:
+                    message: "The authorization process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."
+                example_3:
+                  summary: The api data creation process encountered a technical issue
+                  value:
+                    message: "The api data creation process encountered a technical issue."
+                    suggestion: "Please try again later or contact support if the issue persists."
   /api/v1/get/health:
     get:
       tags:
@@ -407,94 +497,4 @@ paths:
                   summary: The health diagnostic process encountered a technical issue
                   value:
                     message: "The health diagnostic process encountered a technical issue."
-                    suggestion: "Please try again later or contact support if the issue persists."
-        '200':
-          description: The request was successfully received, understood, and processed. A valid response was generated based on the request made on it.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ICreateApiDataResponseData'
-              example:
-                data:
-                  Get Weather:
-                    data:
-                      temperature: "25°C"
-                      condition: "Cloudy"
-                  Get Users:
-                    message: "The api data creation process encountered a technical issue."
-                    suggestion: "Please try again later or contact support if the issue persists."
-        '400':
-          description: The server could not process the request due to invalid syntax, malformed data, or missing parameters. Although there was a request on it, the client must correct the request before retrying.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IResponseData'
-              examples:
-                example_1:
-                  summary: Missing Authorization header
-                  value:
-                    message: "Missing Authorization header."
-                    suggestion: "Include an Authorization header using the Bearer scheme: \"Bearer <token>\"."
-                example_2:
-                  summary: Invalid Authorization scheme
-                  value:
-                    message: "Invalid Authorization scheme."
-                    suggestion: "Use the Bearer authentication scheme: \"Bearer <token>\"."
-        '401':
-          description: The request was received and a request was made on it, but the client failed to provide valid authentication credentials. Access is denied until proper authentication is provided.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IResponseData'
-              examples:
-                example_1:
-                  summary: Authentication token has expired
-                  value:
-                    message: "Authentication token has expired."
-                    suggestion: "Please sign in again to obtain a new token."
-                example_2:
-                  summary: Invalid authentication token
-                  value:
-                    message: "Invalid authentication token."
-                    suggestion: "Ensure your token is valid and has not been tampered with."
-                example_3:
-                  summary: Authentication token is not yet active
-                  value:
-                    message: "Authentication token is not yet active."
-                    suggestion: "Wait until the token’s start time before using it."
-                example_4:
-                  summary: Authentication token has expired
-                  value:
-                    message: "Authentication token has expired."
-                    suggestion: "Please sign in again to obtain a new token."
-        '403':
-          description: Missing required role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IResponseData'
-              example:
-                message: "Missing required role."
-                suggestion: "If you believe this is an error, contact your administrator to request appropriate access."    
-        '500':
-          description: The server encountered an unexpected error while processing the request. A request was made on it, but the server failed to complete the operation due to an internal issue.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IResponseData'
-              examples:
-                example_1:
-                  summary: The authorization process is temporarily unavailable
-                  value:
-                    message: "The authorization process is temporarily unavailable."
-                    suggestion: "Please try again later or contact support if the issue persists."
-                example_2:
-                  summary: The authorization process encountered a technical issue
-                  value:
-                    message: "The authorization process encountered a technical issue."
-                    suggestion: "Please try again later or contact support if the issue persists."
-                example_3:
-                  summary: The api data creation process encountered a technical issue
-                  value:
-                    message: "The api data creation process encountered a technical issue."
                     suggestion: "Please try again later or contact support if the issue persists."
