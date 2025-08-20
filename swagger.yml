@@ -197,7 +197,6 @@ components:
             data:
               temperature: "25°C"
               condition: "Cloudy"
-              humidity: "80%"
           Get Users:
             message: "The api data creation process encountered a technical issue."
             suggestion: "Please try again later or contact support if the issue persists."
