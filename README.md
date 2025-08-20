@@ -24,8 +24,8 @@ Designed for flexibility and scalability, this service simplifies integration wi
 
 ### ⚠️ Prerequisites 
 
-- **Node.js** ≥ `20.14.0` — _JavaScript runtime environment_
-- **MySQL** ≥ `8.0` — _Relational database_
+- [**Node.js**](https://nodejs.org/) ≥ `20.14.0` — _JavaScript runtime environment_
+- [**MySQL**](https://www.mysql.com/) ≥ `8.0` — _Relational database_
 
 ### ⚙️ Setup 
 
