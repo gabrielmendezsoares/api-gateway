@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: 🔀 API Gateway
-  version: 3.0.1
+  version: 3.0.2
   description: |
     ## 📋 Overview
 
@@ -38,13 +38,38 @@ components:
     ICreateApiDataReqBody:
       type: object
       properties:
+        globalReplacementMap:
+          type: object
+          additionalProperties: true
+          description: |
+            Optional global replacement values to apply to all APIs being processed.
+            
+            Keys should match field names from the `api_gateway_apis` schema.
+            These values are applied **before** per-service replacements and can be overridden at the service level.
         filterMap:
           type: object
           additionalProperties: true
-          description: Optional filter criteria for narrowing down the API list to process.
+          description: |
+            Optional filtering criteria used to narrow down which APIs should be queried.
+            
+            Accepts key-value pairs where the values are strings or arrays of strings.
+            For example, filtering by `name` allows selecting only specific APIs by name.
+        <API name>:
+          type: object
+          additionalProperties: true
+          description: |
+            Optional override map scoped to a specific API by its name.
+            
+            These values take precedence over those in `globalReplacementMap` and allow fine-grained control over input data for each API.
+            
+            For example, you can rename one specific API or override its parameters without affecting others.
       example:
+        globalReplacementMap:
+          name: "Get Weather New"
         filterMap:
-          name: ["Get Weather", "Get Users"]          
+          name: ["Get Weather", "Get Users"]
+        Get Weather:
+          name: "Get Weather New" 
     IResponseData:
       type: object
       required:
@@ -296,8 +321,12 @@ paths:
             schema:
               $ref: '#/components/schemas/ICreateApiDataReqBody' 
             example:
+              globalReplacementMap:
+                name: "Get Weather New"
               filterMap:
                 name: ["Get Weather", "Get Users"]      
+              Get Weather:
+                name: "Get Weather New"
       responses:
         '200':
           description: The request was successfully received, understood, and processed. A valid response was generated based on the request made on it.

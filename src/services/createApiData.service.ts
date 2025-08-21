@@ -7,7 +7,39 @@ import { IReqBody, IResponse, IResponseData } from './interfaces/index.js';
 
 const prisma = new PrismaClient();
 
-const processApi = async (apiGatewayApi: api_gateway_apis): Promise<[string, any]> => {
+const extractParameter = <T>(
+  reqBody: any, 
+  defaultValue: T | null,
+  parameterName: keyof api_gateway_apis, 
+  serviceName: string
+): T | undefined => {
+  if (!isObjectType(reqBody)) {
+    return defaultValue !== null 
+      ? defaultValue
+      : undefined;
+  }
+
+  const globalReplacementMapParameter = (reqBody as IReqBody.ICreateApiDataReqBody).globalReplacementMap?.[parameterName];
+
+  if (globalReplacementMapParameter !== undefined) {
+    return globalReplacementMapParameter;
+  }
+
+  const localReplacementMapParameter = (reqBody as any)[serviceName][parameterName];
+
+  if (localReplacementMapParameter !== undefined) {
+    return localReplacementMapParameter;
+  }
+
+  return defaultValue !== null 
+    ? defaultValue
+    : undefined;
+};
+
+const processApi = async (
+  apiGatewayApi: api_gateway_apis, 
+  reqBody: any
+): Promise<[string, any]> => {
   const {
     name,
     authentication_type,
@@ -32,21 +64,44 @@ const processApi = async (apiGatewayApi: api_gateway_apis): Promise<[string, any
     body,
   } = apiGatewayApi;
 
+  const parameterMap = {
+    authenticationType: extractParameter(reqBody, authentication_type, 'authentication_type', name) as string,
+    basicAndBearerAuthenticationMethodType: extractParameter(reqBody, basic_and_bearer_authentication_method_type, 'basic_and_bearer_authentication_method_type', name),
+    methodType: extractParameter(reqBody, method_type, 'method_type', name) as string,
+    responseType: extractParameter(reqBody, response_type, 'response_type', name) as string,
+    apiKeyAuthenticationKey: extractParameter(reqBody, api_key_authentication_key, 'api_key_authentication_key', name),
+    apiKeyAuthenticationHeaderName: extractParameter(reqBody, api_key_authentication_header_name, 'api_key_authentication_header_name', name),
+    basicAuthenticationUsername: extractParameter(reqBody, basic_authentication_username, 'basic_authentication_username', name),
+    basicAuthenticationPassword: extractParameter(reqBody, basic_authentication_password, 'basic_authentication_password', name),
+    basicAndBearerAuthenticationUrl: extractParameter(reqBody, basic_and_bearer_authentication_url, 'basic_and_bearer_authentication_url', name),
+    basicAndBearerAuthenticationQueryParameterMap: extractParameter(reqBody, basic_and_bearer_authentication_query_parameter_map, 'basic_and_bearer_authentication_query_parameter_map', name),
+    basicAndBearerAuthenticationHeaderMap: extractParameter(reqBody, basic_and_bearer_authentication_header_map, 'basic_and_bearer_authentication_header_map', name),
+    basicAndBearerAuthenticationBody: extractParameter(reqBody, basic_and_bearer_authentication_body, 'basic_and_bearer_authentication_body', name),
+    basicAndBearerAuthenticationTokenExtractorList: extractParameter(reqBody, basic_and_bearer_authentication_token_extractor_list, 'basic_and_bearer_authentication_token_extractor_list', name),
+    basicAndBearerAuthenticationExpirationExtractorList: extractParameter(reqBody, basic_and_bearer_authentication_expiration_extractor_list, 'basic_and_bearer_authentication_expiration_extractor_list', name),
+    basicAndBearerAuthenticationExpirationBuffer: extractParameter(reqBody, basic_and_bearer_authentication_expiration_buffer, 'basic_and_bearer_authentication_expiration_buffer', name),
+    bearerAuthenticationToken: extractParameter(reqBody, bearer_authentication_token, 'bearer_authentication_token', name),
+    url: extractParameter(reqBody, url, 'url', name) as string,
+    queryParameterMap: extractParameter(reqBody, query_parameter_map, 'query_parameter_map', name),
+    headerMap: extractParameter(reqBody, header_map, 'header_map', name),
+    body: extractParameter(reqBody, body, 'body', name)
+  };
+
   const httpClientInstance = new HttpClientUtil.HttpClient();
 
   try {
-    switch (authentication_type) {
+    switch (parameterMap.authenticationType) {
       case 'API Key':
         const apiKeyStrategyInstance = new ApiKeyStrategy.ApiKeyStrategy(
           cryptographyUtil.decryptFromAes256Cbc(
             process.env.API_GATEWAY_APIS_API_KEY_AUTHENTICATION_KEY_ENCRYPTION_KEY as string,
             process.env.API_GATEWAY_APIS_API_KEY_AUTHENTICATION_KEY_IV_STRING as string,
-            new TextDecoder().decode(api_key_authentication_key as Uint8Array<ArrayBufferLike>)
+            new TextDecoder().decode(parameterMap.apiKeyAuthenticationKey as Uint8Array<ArrayBufferLike>)
           ),
           cryptographyUtil.decryptFromAes256Cbc(
             process.env.API_GATEWAY_APIS_API_KEY_AUTHENTICATION_HEADER_NAME_ENCRYPTION_KEY as string,
             process.env.API_GATEWAY_APIS_API_KEY_AUTHENTICATION_HEADER_NAME_IV_STRING as string,
-            new TextDecoder().decode(api_key_authentication_header_name as Uint8Array<ArrayBufferLike>)
+            new TextDecoder().decode(parameterMap.apiKeyAuthenticationHeaderName as Uint8Array<ArrayBufferLike>)
           ),
         );
         
@@ -59,12 +114,12 @@ const processApi = async (apiGatewayApi: api_gateway_apis): Promise<[string, any
           cryptographyUtil.decryptFromAes256Cbc(
             process.env.API_GATEWAY_APIS_BASIC_AUTHENTICATION_USERNAME_ENCRYPTION_KEY as string,
             process.env.API_GATEWAY_APIS_BASIC_AUTHENTICATION_USERNAME_IV_STRING as string,
-            new TextDecoder().decode(basic_authentication_username as Uint8Array<ArrayBufferLike>)
+            new TextDecoder().decode(parameterMap.basicAuthenticationUsername as Uint8Array<ArrayBufferLike>)
           ),
           cryptographyUtil.decryptFromAes256Cbc(
             process.env.API_GATEWAY_APIS_BASIC_AUTHENTICATION_PASSWORD_ENCRYPTION_KEY as string,
             process.env.API_GATEWAY_APIS_BASIC_AUTHENTICATION_PASSWORD_IV_STRING as string,
-            new TextDecoder().decode(basic_authentication_password as Uint8Array<ArrayBufferLike>)
+            new TextDecoder().decode(parameterMap.basicAuthenticationPassword as Uint8Array<ArrayBufferLike>)
           )
         );
 
@@ -73,64 +128,48 @@ const processApi = async (apiGatewayApi: api_gateway_apis): Promise<[string, any
         break;
 
       case 'Basic And Bearer':
-        const tokenExtractor = basic_and_bearer_authentication_token_extractor_list 
+        const tokenExtractor = parameterMap.basicAndBearerAuthenticationTokenExtractorList 
           ? (response: Axios.AxiosXHR<any>): any => {
-              return (basic_and_bearer_authentication_token_extractor_list as string[]).reduce(
-                (
-                  accumulator: any, 
-                  extractor: any
-                ): any => {
-                  const value = accumulator[extractor];
-
-                  return value ?? accumulator;
-                },
+              return (parameterMap.basicAndBearerAuthenticationTokenExtractorList as string[]).reduce(
+                (accumulator: any, extractor: any): any => accumulator[extractor] ?? accumulator,
                 response
               );
             }
           : undefined;
             
-        const expirationExtractor = basic_and_bearer_authentication_expiration_extractor_list
+        const expirationExtractor = parameterMap.basicAndBearerAuthenticationExpirationExtractorList
           ? (response: Axios.AxiosXHR<any>): any => {
-              return (basic_and_bearer_authentication_expiration_extractor_list as string[]).reduce(
-                (
-                  accumulator: any, 
-                  extractor: any
-                ): any => {
-                  const value = accumulator[extractor];
-
-                  return value ?? accumulator;
-                },
+              return (parameterMap.basicAndBearerAuthenticationExpirationExtractorList as string[]).reduce(
+                (accumulator: any, extractor: any): any => accumulator[extractor] ?? accumulator,
                 response
               );
             }
           : undefined;
 
-        const basicAndBearerAuthenticationStrategyInstance = new BasicAndBearerStrategy.BasicAndBearerStrategy(
-          basic_and_bearer_authentication_method_type as string,
-          basic_and_bearer_authentication_url as string,
-          basic_authentication_username
-            ? cryptographyUtil.decryptFromAes256Cbc(
-                process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_USERNAME_ENCRYPTION_KEY as string,
-                process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_USERNAME_IV_STRING as string,
-                new TextDecoder().decode(basic_authentication_username)
-              )
-            : undefined,
-          basic_authentication_password
-            ? cryptographyUtil.decryptFromAes256Cbc(
-                process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_PASSWORD_ENCRYPTION_KEY as string,
-                process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_PASSWORD_IV_STRING as string,
-                new TextDecoder().decode(basic_authentication_password)
-              )
-            : undefined,
-          basic_and_bearer_authentication_query_parameter_map as JsonObject ?? undefined,
-          basic_and_bearer_authentication_header_map as JsonObject ?? undefined,
-          basic_and_bearer_authentication_body ?? undefined,
+        const basicAndBearerStrategyInstance = new BasicAndBearerStrategy.BasicAndBearerStrategy(
+          parameterMap.basicAndBearerAuthenticationMethodType as string,
+          parameterMap.basicAndBearerAuthenticationUrl as string,
+          parameterMap.basicAuthenticationUsername &&
+            cryptographyUtil.decryptFromAes256Cbc(
+              process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_USERNAME_ENCRYPTION_KEY as string,
+              process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_USERNAME_IV_STRING as string,
+              new TextDecoder().decode(parameterMap.basicAuthenticationUsername)
+            ),
+          parameterMap.basicAuthenticationPassword &&
+            cryptographyUtil.decryptFromAes256Cbc(
+              process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_PASSWORD_ENCRYPTION_KEY as string,
+              process.env.API_GATEWAY_APIS_BASIC_AND_BEARER_AUTHENTICATION_PASSWORD_IV_STRING as string,
+              new TextDecoder().decode(parameterMap.basicAuthenticationPassword)
+            ),
+          parameterMap.basicAndBearerAuthenticationQueryParameterMap as JsonObject | undefined,
+          parameterMap.basicAndBearerAuthenticationHeaderMap as JsonObject | undefined,
+          parameterMap.basicAndBearerAuthenticationBody,
           tokenExtractor,
           expirationExtractor,
-          basic_and_bearer_authentication_expiration_buffer ?? undefined
+          parameterMap.basicAndBearerAuthenticationExpirationBuffer
         );
 
-        httpClientInstance.setAuthenticationStrategy(basicAndBearerAuthenticationStrategyInstance);
+        httpClientInstance.setAuthenticationStrategy(basicAndBearerStrategyInstance);
 
         break;
 
@@ -139,7 +178,7 @@ const processApi = async (apiGatewayApi: api_gateway_apis): Promise<[string, any
           cryptographyUtil.decryptFromAes256Cbc(
             process.env.API_GATEWAY_APIS_BEARER_AUTHENTICATION_TOKEN_ENCRYPTION_KEY as string,
             process.env.API_GATEWAY_APIS_BEARER_AUTHENTICATION_TOKEN_IV_STRING as string,
-            new TextDecoder().decode(bearer_authentication_token as Uint8Array<ArrayBufferLike>)
+            new TextDecoder().decode(parameterMap.bearerAuthenticationToken as Uint8Array<ArrayBufferLike>)
           )
         );
 
@@ -152,13 +191,13 @@ const processApi = async (apiGatewayApi: api_gateway_apis): Promise<[string, any
     }
 
     const response = await httpClientInstance.request<IResponse.IResponse<any>>(
-      method_type,
-      url,
-      body ?? undefined,
+      parameterMap.methodType,
+      parameterMap.url,
+      parameterMap.body,
       { 
-        params: query_parameter_map ?? undefined,
-        headers: header_map ?? undefined,
-        responseType: response_type 
+        params: parameterMap.queryParameterMap,
+        headers: parameterMap.headerMap,
+        responseType: parameterMap.responseType 
       }
     );
 
@@ -185,17 +224,13 @@ export const createApiData = async (req: Request): Promise<IResponse.IResponse<I
         ? Object.fromEntries(
             Object
               .entries(reqBodyFilterMap)
-              .map(
-                ([key, value]: [string, any]): [string, Record<string, any>] => {
-                  return [key, { [Array.isArray(value) ? 'in' : 'equals']: value }];
-                }
-              )
+              .map(([key, value]: [string, any]): [string, Record<string, any>] => [key, { [Array.isArray(value) ? 'in' : 'equals']: value }])
           ) 
         : undefined
     }
   );
   
-  const apiDataEntryList = await Promise.all(apiGatewayApiList.map(processApi));
+  const apiDataEntryList = await Promise.all(apiGatewayApiList.map((apiGatewayApi: api_gateway_apis): Promise<[string, any]> => processApi(apiGatewayApi, req.body)));
 
   return {
     status: 200,
