@@ -220,8 +220,8 @@ components:
         data:
           Get Weather:
             data:
-              temperature: "25°C"
-              condition: "Cloudy"
+              - temperature: "25°C"
+                condition: "Cloudy"
           Get Users:
             message: "The api data creation process encountered a technical issue."
             suggestion: "Please try again later or contact support if the issue persists."
@@ -338,8 +338,8 @@ paths:
                 data:
                   Get Weather:
                     data:
-                      temperature: "25°C"
-                      condition: "Cloudy"
+                      - temperature: "25°C"
+                        condition: "Cloudy"
                   Get Users:
                     message: "The api data creation process encountered a technical issue."
                     suggestion: "Please try again later or contact support if the issue persists."
